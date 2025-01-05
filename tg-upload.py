@@ -10,7 +10,7 @@ from os import environ as env
 from moviepy.video.io.VideoFileClip import VideoFileClip
 from moviepy.audio.io.AudioFileClip import AudioFileClip
 from math import floor
-
+import requests
 import argparse
 import hashlib
 
@@ -31,7 +31,7 @@ parser = argparse.ArgumentParser(
   usage="https://thecaduceus.eu.org/tg-upload",
   description="An open-source Python program or a CLI Tool to upload/download files/folder to/from Telegram effortlessly.",
   epilog="An open-source program developed by Dr.Caduceus (GitHub.com/TheCaduceus)"
-  )
+)
 
 # CONNECTIVITY FLAGS
 parser.add_argument("--ipv6", default=env.get("TG_UPLOAD_IPV6", "False").lower() in {"true", "t", "1"}, action="store_true", help="Connect to Telegram using your device's IPv6, by default IPv4.")
@@ -54,24 +54,24 @@ parser.add_argument("--login_only", default=env.get("TG_UPLOAD_LOGIN_ONLY", "Fal
 # FILE FLAGS
 parser.add_argument("-l","--path", metavar="TG_UPLOAD_PATH", default=env.get("TG_UPLOAD_PATH", None), help="Path to the file or folder to upload.")
 parser.add_argument("-n","--filename", metavar="TG_UPLOAD_FILENAME", default=env.get("TG_UPLOAD_FILENAME", None), help="To upload/download data with custom name.")
-parser.add_argument("-i","--thumb", metavar="TG_UPLOAD_THUMB", default=env.get("TG_UPLOAD_THUMB", None), help="Path of thumbnail image to be attached with given file. Pass 'auto' for random frame or provide a specific time in seconds.")
+parser.add_argument("-i","--thumb", metavar="TG_UPLOAD_THUMB", default=env.get("TG_UPLOAD_THUMB", None), help="Path of thumbnail image to be attached with given file. Pass 'auto' for random frame or provide time in seconds.")
 parser.add_argument("-z","--caption", metavar="TG_UPLOAD_CAPTION", default=env.get("TG_UPLOAD_CAPTION", ""), help="Caption text to be attached with file, markdown & HTML formatting allowed.")
 parser.add_argument("--duration", metavar="TG_UPLOAD_DURATION", default=int(env.get("TG_UPLOAD_DURATION", 0)), type=int, help="Duration of audio/video in seconds. Pass '-1' for automatic detection.")
 parser.add_argument("--capjson", metavar="TG_UPLOAD_CAPJSON", default=env.get("TG_UPLOAD_CAPJSON", None), help="Caption name (in caption.json) to attach with given file.")
 
 # BEHAVIOUR FLAGS
-parser.add_argument("-c","--chat_id", metavar="TG_UPLOAD_CHAT_ID", default=env.get("TG_UPLOAD_CHAT_ID", "me") , help="The identity of the chat to upload or download the file to/from can be the username of a user, or the title or username of a supergroup/channel.")
+parser.add_argument("-c","--chat_id", metavar="TG_UPLOAD_CHAT_ID", default=env.get("TG_UPLOAD_CHAT_ID", "me") , help="The identity of the chat to upload or download the file to/from can be the username, phone number or user ID.")
 parser.add_argument("--as_photo", default=env.get("TG_UPLOAD_AS_PHOTO", "False").lower() in {"true", "t", "1"}, action="store_true", help="Send given file as picture.")
 parser.add_argument("--as_video", default=env.get("TG_UPLOAD_AS_VIDEO", "False").lower() in {"true", "t", "1"}, action="store_true", help="Send given file as video.")
 parser.add_argument("--as_audio", default=env.get("TG_UPLOAD_AS_AUDIO", "False").lower() in {"true", "t", "1"}, action="store_true", help="Send given file as audio.")
 parser.add_argument("--as_voice", default=env.get("TG_UPLOAD_AS_VOICE", "False").lower() in {"true", "t", "1"}, action="store_true", help="Send given file as voice.")
 parser.add_argument("--as_video_note", default=env.get("TG_UPLOAD_AS_VIDEO_NOTE", "False").lower() in {"true", "t", "1"}, action="store_true", help="Send given file as video note.")
 parser.add_argument("--split", metavar="TG_UPLOAD_SPLIT", type=int, default=int(env.get("TG_UPLOAD_SPLIT", 0)), help="Split files in given bytes and upload.")
-parser.add_argument("--replace", metavar="TG_UPLOAD_REPLACE", type=str, default=env.get("TG_UPLOAD_REPLACE", ",").split(","), nargs=2, help="Replace given character or keyword in filename. Requires two arguments, the text to replace and the replacement text.")
+parser.add_argument("--replace", metavar="TG_UPLOAD_REPLACE", type=str, default=env.get("TG_UPLOAD_REPLACE", ",").split(","), nargs=2, help="Replace given character or keyword in filename. Requires two arguments.")
 parser.add_argument("--reply_to", metavar="TG_UPLOAD_REPLY_TO", type=int, default=int(env.get("TG_UPLOAD_REPLY_TO", 0)), help="Send files as reply to given message id.")
 parser.add_argument("--disable_stream", default=env.get("TG_UPLOAD_DISABLE_STREAM", "True").lower() in {"true", "t", "1"}, action="store_false", help="Disable streaming for given video.")
 parser.add_argument("-b","--spoiler", default=env.get("TG_UPLOAD_SPOILER", "False").lower() in {"true", "t", "1"}, action="store_true", help="Send media with spoiler animation.")
-parser.add_argument("-y","--self_destruct", metavar="TG_UPLOAD_SELF_DESTRUCT", type=int, default=int(env.get("TG_UPLOAD_SELF_DESTRUCT", 0)), help="Number of seconds (60 or below) after which photo/video should self-destruct.")
+parser.add_argument("-y","--self_destruct", metavar="TG_UPLOAD_SELF_DESTRUCT", type=int, default=int(env.get("TG_UPLOAD_SELF_DESTRUCT", 0)), help="Number of seconds (60 or below) after which photo/video will self destruct.")
 parser.add_argument("--protect", default=env.get("TG_UPLOAD_PROTECT", "False").lower() in {"true", "t", "1"}, action="store_true", help="Protect uploaded files from getting forwarded & saved.")
 parser.add_argument("--parse_mode", metavar="TG_UPLOAD_PARSE_MODE", default=env.get("TG_UPLOAD_PARSE_MODE", "DEFAULT"), help="Set custom formatting mode for caption.")
 parser.add_argument("-d","--delete_on_done", default=env.get("TG_UPLOAD_DELETE_ON_DONE", "False").lower() in {"true", "t", "1"}, action="store_true", help="Delete the given file after task completion.")
@@ -82,8 +82,8 @@ parser.add_argument("-t","--title", metavar="TG_UPLOAD_TITLE", default=env.get("
 parser.add_argument("-s","--silent", default=env.get("TG_UPLOAD_SILENT", "False").lower() in {"true", "t", "1"}, action="store_true", help="Send files silently to given chat.")
 parser.add_argument("-r","--recursive", default=env.get("TG_UPLOAD_RECURSIVE", "False").lower() in {"true", "t", "1"}, action="store_true", help="Upload files recursively if path is a folder.")
 parser.add_argument("--prefix", metavar="TG_UPLOAD_PREFIX", default=env.get("TG_UPLOAD_PREFIX", None), help="Add given prefix text to each filename (prefix + filename).")
-parser.add_argument("-g","--hash_memory_limit", metavar="TG_UPLOAD_HASH_MEMORY_LIMIT", type=int, default=int(env.get("TG_UPLOAD_HASH_MEMORY_LIMIT", 1000000)), help="Limit how much memory should be used to calculate file hash.")
-parser.add_argument("-f","--combine_memory_limit", metavar="TG_UPLOAD_COMBINE_MEMORY_LIMIT", type=int, default=int(env.get("TG_UPLOAD_COMBINE_MEMORY_LIMIT", 1000000)), help="Limit how much memory should be used to restore original file using part files.")
+parser.add_argument("-g","--hash_memory_limit", metavar="TG_UPLOAD_HASH_MEMORY_LIMIT", type=int, default=int(env.get("TG_UPLOAD_HASH_MEMORY_LIMIT", 1000000)), help="Limit how much memory should be used for calculating hash.")
+parser.add_argument("-f","--combine_memory_limit", metavar="TG_UPLOAD_COMBINE_MEMORY_LIMIT", type=int, default=int(env.get("TG_UPLOAD_COMBINE_MEMORY_LIMIT", 1000000)), help="Limit how much memory should be used for combining files.")
 parser.add_argument("--split_dir", metavar="TG_UPLOAD_SPLIT_DIR", default=env.get("TG_UPLOAD_SPLIT_DIR", "split"), help="Set custom directory for saving splitted files.")
 parser.add_argument("--combine_dir", metavar="TG_UPLOAD_COMBINE_DIR", default=env.get("TG_UPLOAD_COMBINE_DIR", "combine"), help="Set custom directory for saving combined files.")
 parser.add_argument("--thumb_dir", metavar="TG_UPLOAD_THUMB_DIR", default=env.get("TG_UPLOAD_THUMB_DIR", "thumb"), help="Set custom directory for saving thumbnails.")
@@ -95,13 +95,9 @@ parser.add_argument("--dl", default=env.get("TG_UPLOAD_DL", "False").lower() in 
 parser.add_argument("--links", metavar="TG_UPLOAD_LINKS", nargs="+", type=str, default=env.get("TG_UPLOAD_LINKS", "").split(","), help="Telegram file links to be downloaded (separated with space).")
 parser.add_argument("--txt_file", metavar="TG_UPLOAD_TXT_FILE", default=env.get("TG_UPLOAD_TXT_FILE", None), help=".txt file path containing telegram file links to be downloaded (1 link / line).")
 parser.add_argument("-j", "--auto_combine", default=env.get("TG_UPLOAD_AUTO_COMBINE", "False") in {"true","t","1"}, action="store_true", help="Automatically start combining part files after download.")
-parser.add_argument("--range", default=env.get("TG_UPLOAD_RANGE", "False").lower() in {"true", "t", "1"}, action="store_true", help="Find and download messages in between of two given links or message ids.")
+parser.add_argument("--range", default=env.get("TG_UPLOAD_RANGE", "False").lower() in {"true", "t", "1"}, action="store_true", help="Find and download messages in between of two given links or message IDs.")
 parser.add_argument("--msg_id", nargs="+", metavar="TG_UPLOAD_MSG_ID", type=int, default=env.get("TG_UPLOAD_MSG_ID", "").split(","), help="Identity number of messages to be downloaded (separated with space).")
 parser.add_argument("--dl_dir", metavar="TG_UPLOAD_DL_DIR", default=env.get("TG_UPLOAD_DL_DIR", "downloads"), help="Change the download directory, by default 'downloads' in current working directory.")
-
-# TMDB FLAGS
-parser.add_argument("--tmdb_api_key", metavar="TMDB_API_KEY", default=env.get("TMDB_API_KEY", None), help="API key for TMDB to fetch movie details.")
-parser.add_argument("--movie_id", metavar="MOVIE_ID", type=int, help="TMDB movie ID to fetch details.")
 
 # UTILITY FLAGS
 parser.add_argument("--env", action="store_true", help="Display environment variables, their current value and default value in tabular format.")
@@ -114,49 +110,26 @@ parser.add_argument("--convert", help="Convert any image into JPEG format.")
 
 # MISC FLAGS
 parser.add_argument("--device_model", metavar="TG_UPLOAD_DEVICE_MODEL", default=env.get("TG_UPLOAD_DEVICE_MODEL", "tg-upload"), help="Overwrite device model before starting client, by default 'tg-upload'.")
-parser.add_argument("--system_version", metavar="TG_UPLOAD_SYSTEM_VERSION", default=env.get("TG_UPLOAD_SYSTEM_VERSION", f"{py_ver[0]}.{py_ver[1]}.{py_ver[2]}"), help="Overwrite system version before starting client, by default to Python version.")
+parser.add_argument("--system_version", metavar="TG_UPLOAD_SYSTEM_VERSION", default=env.get("TG_UPLOAD_SYSTEM_VERSION", f"{py_ver[0]}.{py_ver[1]}.{py_ver[2]}"), help="Overwrite system version before starting client, by default Python version.")
 parser.add_argument("-v","--version", action="version", help="Display current version of tg-upload and dependencies.", version=versions)
 
 args = parser.parse_args()
 
-
-# TMDB API Function to fetch movie details and poster
-def fetch_movie_details(api_key, movie_id):
-    url = f"https://api.themoviedb.org/3/movie/{movie_id}"
-    params = {
-        "api_key": api_key,
-        "append_to_response": "images"
-    }
-    response = get_url(url, params=params)
-    if response.status_code == 200:
-        return response.json()
-    else:
-        raise ValueError("Failed to fetch movie details from TMDB API")
-
-# Function to download the movie poster
-def download_poster(image_path, save_path):
-    response = get_url(image_path)
-    if response.status_code == 200:
-        with open(save_path, "wb") as f:
-            f.write(response.content)
-    else:
-        raise ValueError("Failed to download poster image")
-
 # Check version
 if not args.no_update:
-    try:
-        release_json = get_url(json_endpoint).json()
-        if tg_upload != release_json["latestRelease"]["version"]:
-            print(f"[UPDATE] - A new release v{release_json['latestRelease']['version']} is available.\n")
-            if release_json["latestRelease"]["showNotLatestMSG"] == "1":
-                print(f"\n[NEWS] - {release_json['release']['notLatestMSG']}\n")
-        elif release_json["latestRelease"]["showLatestMSG"] == "1":
-            print(f"[NEWS] - {release_json['latestRelease']['latestMSG']}\n")
+  try:
+    release_json = get_url(json_endpoint).json()
+    if tg_upload != release_json["latestRelease"]["version"]:
+      print(f"[UPDATE] - A new release v{release_json['latestRelease']['version']} is available.\n")
+      if release_json["latestRelease"]["showNotLatestMSG"] == "1":
+        print(f"\n[NEWS] - {release_json['release']['notLatestMSG']}\n")
+    elif release_json["latestRelease"]["showLatestMSG"] == "1":
+      print(f"[NEWS] - {release_json['latestRelease']['latestMSG']}\n")
 
-        if tg_upload in list(release_json["releaseSpecificNotice"].keys()):
-            print(f"[NOTICE] - {release_json['releaseSpecificNotice'][tg_upload]}\n")
-    except Exception:
-        print("[UPDATE] - Failed to check for latest version.")
+    if tg_upload in list(release_json["releaseSpecificNotice"].keys()):
+      print(f"[NOTICE] - {release_json['releaseSpecificNotice'][tg_upload]}\n")
+  except Exception:
+    print("[UPDATE] - Failed to check for latest version.")
 
 def validate_link(link):
     link_parts = link.replace(" ", "").split('/')
@@ -190,4 +163,46 @@ def msg_info(message):
     elif message.audio:
         filename = message.audio.file_name
         filesize = message.audio.file_size
-    elif message
+    elif message.photo:
+        filename = f"IMG_{message.id}_{message.photo.file_unique_id}.jpg"
+        filesize = message.photo.file_size
+    else:
+        filename = f"unknown_{message.id}"
+        filesize = 0
+
+    if args.filename:
+        filename = args.filename
+    if args.prefix:
+        filename = args.prefix + filename
+    if args.replace:
+        filename = filename.replace(args.replace[0], args.replace[1])
+    if args.dl_dir:
+        dl_dir = PurePath(args.dl_dir)
+        filename = f"{dl_dir}/{filename}"
+
+    return filename, filesize / 1024 / 1024 if filesize != 0 else 0
+
+def file_info(file_path, caption_text):
+    file_size = Path(file_path).stat().st_size
+
+    if '{file_sha256}' in caption_text and '{file_md5}' in caption_text:
+        with open(file_path, "rb") as f:
+            bytes_read = 0
+            file_sha256 = hashlib.sha256()
+            file_md5 = hashlib.md5()
+            while True:
+                chunk = f.read(args.hash_memory_limit)
+                if not chunk:
+                    break
+                file_sha256.update(chunk)
+                file_md5.update(chunk)
+                bytes_read += len(chunk)
+                progress = bytes_read / file_size * 100
+                print(f"\rCalculating SHA256 & MD5 - {progress:.2f}%", end="")
+        file_sha256 = file_sha256.hexdigest()
+        file_md5 = file_md5.hexdigest()
+    elif '{file_sha256}' in caption_text:
+        with open(file_path, "rb") as f:
+            bytes_read = 0
+            file_sha256 = hashlib.sha256()
+            while True:
