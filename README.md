@@ -79,7 +79,7 @@ pkg install git -y
 
 - Use Git:
 ```
-git clone https://github.com/TheCaduceus/tg-upload.git
+git clone https://github.com/SoundAndColors/tg-upload.git
 ```
 
 > Starting from release [v1.0.1](https://github.com/TheCaduceus/tg-upload/releases/tag/v1.0.1), tg-upload no longer supports Termux due to the absence of some required dependencies. You may try an older [release](https://github.com/TheCaduceus/tg-upload/releases/tag/v1.0.0) to enjoy the basic functionalities offered by tg-upload. Hence, any issue related to Termux will be rejected without any further investigation.
