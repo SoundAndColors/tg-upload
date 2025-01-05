@@ -3,7 +3,7 @@ import hashlib
 import requests
 from pathlib import Path, PurePath
 from sys import version_info as py_ver
-from pkg_resources import get_distribution as get_dist
+from importlib.metadata import version, PackageNotFoundError
 from time import time
 from json import load as json_load
 from PIL import Image
@@ -27,7 +27,22 @@ def get_movie_details(movie_title, api_key):
 
 # Setup argparse and other initial configurations
 tg_upload = "1.1.5"
-versions = f"tg-upload: {tg_upload} Python: {py_ver[0]}.{py_ver[1]}.{py_ver[2]} Pyrogram: {get_dist('pyrogram').version} Prettytable: {get_dist('prettytable').version} Pillow: {get_dist('pillow').version} httpx: {get_dist('httpx').version} TgCrypto: {get_dist('tgcrypto').version} moviepy {get_dist('moviepy').version} "
+
+def get_version(package_name):
+    try:
+        return version(package_name)
+    except PackageNotFoundError:
+        return "not installed"
+
+versions = f"tg-upload: {tg_upload} " \
+           f"Python: {py_ver[0]}.{py_ver[1]}.{py_ver[2]} " \
+           f"Pyrogram: {get_version('pyrogram')} " \
+           f"Prettytable: {get_version('prettytable')} " \
+           f"Pillow: {get_version('Pillow')} " \
+           f"httpx: {get_version('httpx')} " \
+           f"TgCrypto: {get_version('TgCrypto')} " \
+           f"moviepy {get_version('moviepy')} "
+
 json_endpoint = "https://cdn.thecaduceus.eu.org/tg-upload/release.json"
 
 parser = argparse.ArgumentParser(
